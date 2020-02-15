@@ -12,6 +12,11 @@ CMAP_BATAILLE = ListedColormap(CMAP_BATAILLE_ARRAY)
 class UnexpectedGameState(Exception):
     pass
 
+class RetourDeTir(Enum):
+    Vide = 1
+    Touchee = 2
+    Coulee = 3
+
 class Bataille:
     def __init__(self, grille: Grille):
         #On récupère la grille mais on ne la modifiera jamais
@@ -50,7 +55,7 @@ class Bataille:
     @property
     def tailles(self) -> Point2D:
         return self._grille.tailles
-    
+
     def est_dans_la_grille(self, pos: Point2D) -> bool:
         return self._grille.est_dans_la_grille(pos)
 
@@ -62,7 +67,7 @@ class Bataille:
             return self._grille.case(pos)
         else:
             return -1
-    
+
     @property
     def victoire(self) -> bool:
         return self._nb_cases_touchees == self._nb_cases_occupees
@@ -70,9 +75,10 @@ class Bataille:
     def affiche(self, **kwargs):
         pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
-    def tirer(self, case: Point2D) -> int:
-        """Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
-        Retourne 1 ssi il y a victoire 0 sinon"""
+    def tirer(self, case: Point2D) -> RetourDeTir:
+        """
+        Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
+        """
         if self.victoire:
             raise UnexpectedGameState("Bataille déjà gagnée")
         else:
@@ -80,15 +86,16 @@ class Bataille:
             self.score = self.score + 1
             if self._grille.case(case) != TypeBateau.Vide.value:
                 self._nb_cases_touchees = self._nb_cases_touchees + 1
+                # FIXME: retourner touchée ou coulée
                 return self._grille.case(case)
             else:
-                return 0
-    
+                return RetourDeTir.Vide
+
     def reset(self) -> None:
         self._cases_touchees = np.zeros(self.tailles)
         self._nb_cases_touchees = 0
         self.score = 0
-    
+
 
 grille = Grille(20,6)
 grille.place(TypeBateau.PorteAvions, (0,0), Direction.Horizontal, en_place = True)
