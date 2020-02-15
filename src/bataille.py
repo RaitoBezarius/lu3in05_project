@@ -47,6 +47,8 @@ class Bataille:
         #   self._nb_cases_touchees == self.NB_CASES_OCCUPEES
         self._nb_cases_touchees = 0
 
+        self.bateaux_coules: List[Tuple[TypeBateau, Direction, Set[Point2D]]] = []
+
         # On compte au fur et à mesure le score (i.e. le nombre de tirs effectués au cours de la bataille)
         self.score = 0
 
@@ -57,6 +59,7 @@ class Bataille:
             On propose donc la fonction suivante:
                 f(x,y) =(x + 1) * y - 1
             On vérifie que c'est bien ce qu'on souhaite"""
+        # FIXME: le fog of war doit afficher les cases coulées entièrement.
         return ((self._grille.inner + 1) * self._cases_touchees) - 1
 
     def __repr__(self):
@@ -101,7 +104,7 @@ class Bataille:
     def affiche(self, **kwargs):
         pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
-    def obtenir_bateau(self, case: Point2D) -> Set[Point2D]:
+    def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
         """
         Si la case a été coulée, donc le bâteau est devenu visible, il faut retourner les points du bâteau.
         """
@@ -116,7 +119,13 @@ class Bataille:
         """
         À partir de l'ensemble des cases coulées, on peut calculer une grille partielle.
         """
-        pass
+        g = Grille(self.tailles)
+
+        for type_, dir_, positions in self.bateaux_coules:
+            c_pos = self._grille.registre_des_positions[next(iter(positions))]
+            g.place(type_, c_pos, dir_)
+
+        return g
 
     def compatible_avec_les_contraintes(self, grille: Grille) -> bool:
         """
@@ -137,13 +146,13 @@ class Bataille:
         if not self.est_dans_la_grille(case):
             raise InvalidAction("Case hors de la grille!")
 
-        self.score = self.score + 1
+        self.score += 1
         if (
             self._grille.case(case) != TypeBateau.Vide.value
             and self.etat_de_case(case) is None
         ):
             # on récupère une référence canonique au bâteau, peu importe sa case.
-            type_, c_pos = self._grille.reference_bateau(case)
+            type_, dir_, c_pos = self._grille.reference_bateau(case)
             # on augmente le nombre de cases touchées.
             self._nb_cases_touchees[c_pos] += 1
             # on détermine si on a coulé ou touchée seulement le bâteau.
@@ -154,6 +163,9 @@ class Bataille:
             )
             # on note la valeur de retour.
             self._cases_touchees[case[0], case[1]] = retour.value
+
+            if retour == RetourDeTir.Coulee:
+                self.bateaux_coules.append(self.obtenir_bateau(case))
             # on redonne le retour.
             return retour
         else:

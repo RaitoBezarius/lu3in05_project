@@ -54,6 +54,7 @@ def main():
     grille = Grille.generer_grille(
         n=tailles[0], m=tailles[1], facteur_vide=args.facteur_vide
     )
+    print(repr(grille))
     bataille = Bataille(grille)
     strategie = charge_strategie(args.strategie)
 

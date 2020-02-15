@@ -88,9 +88,9 @@ def tirer_direction_uniformement() -> Direction:
 
 class Grille:
     def __init__(self, n=10, m=10):
-        self.inner = np.zeros((n, m), np.uint8)
-        self.registre_des_bateaux = defaultdict(set)
-        self.registre_des_positions = dict()
+        self.inner: np.array = np.zeros((n, m), np.uint8)
+        self.registre_des_bateaux: Dict[Point2D, Tuple[TypeBateau, Direction, Set[Point2D]]] = dict()
+        self.registre_des_positions: Dict[Point2D, Point2D] = dict()
 
     def __repr__(self):
         return repr(self.inner)
@@ -130,6 +130,18 @@ class Grille:
 
         return self.inner[pos[0]][pos[1]]
 
+    def reference_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Point2D]:
+        """
+        Retourne les données canoniques d'un bâteau dans cette grille.
+        """
+        c_pos = self.registre_des_positions.get(case)
+        if c_pos is None:
+            raise ValueError("Aucun bâteau ne se trouve à cette case!")
+
+        type_, dir_, _ = self.registre_des_bateaux.get(c_pos)
+
+        return type_, dir_, c_pos
+
     def peut_placer(self, type_: TypeBateau, pos: Point2D, dir_: Direction) -> bool:
         return all(
             self.est_dans_la_grille(pos) and self.case(pos) == TypeBateau.Vide
@@ -160,7 +172,7 @@ class Grille:
         return False
 
     def place(
-        self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = False
+        self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = True
     ) -> "Grille":
         inner = self.inner
         reg_bateaux = self.registre_des_bateaux
@@ -170,9 +182,11 @@ class Grille:
             reg_bateaux = self.registre_des_bateaux.copy()
             reg_positions = self.registre_des_positions.copy()
 
+        reg_bateaux[pos] = (type_, dir_, set())
+
         for pos_ in engendre_position_pour_un_bateau(pos, type_, dir_):
             inner[pos_[0], pos[1]] = type_.value
-            reg_bateaux[pos].add(pos_)
+            reg_bateaux[pos][2].add(pos_)
             reg_positions[pos_] = pos
 
         if en_place:
@@ -180,7 +194,7 @@ class Grille:
         else:
             return Grille.depuis_tableau(inner, reg_bateaux, reg_positions)
 
-    def place_alea(self, type_: TypeBateau, en_place: bool = False) -> "Grille":
+    def place_alea(self, type_: TypeBateau, en_place: bool = True) -> "Grille":
         """
         Cette fonction fait l'hypothèse qu'il existe un emplacement admissible, sinon elle bouclera infiniement.
         """
@@ -197,7 +211,7 @@ class Grille:
         # Utiliser une cmap custom?
         pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
 
-    def obtenir_bateau(self, case: Point2D) -> Set[Point2D]:
+    def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
         if case not in self.registre_des_positions:
             raise ValueError("Cette position n'est pas enregistré pour un bâteau")
         c_pos = self.registre_des_positions.get(case)
@@ -256,7 +270,7 @@ class Grille:
                 and nbBateau < maxNbBateau
                 and nbBateauDeCeType < maxNbBateauDeCeType
             ):
-                g.place_alea(bateau, en_place=True)
+                g.place_alea(bateau)
                 nbBateau += 1
                 nbBateauDeCeType += 1
         return g
