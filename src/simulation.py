@@ -33,7 +33,7 @@ def main():
     parser.add_argument(
         "-fv",
         "--facteur-vide",
-        help="Détermine le facteur vide de la grille générée aléatoirement (defaut: environ 30 % des cases sont vides)",
+        help="Détermine le facteur vide de la grille générée aléatoirement (defaut: environ 30 %% des cases sont vides)",
         default=0.3,
     )
     parser.add_argument(

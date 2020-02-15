@@ -134,7 +134,17 @@ class Bataille:
         — il faut vérifier que les cases non coulées mais proposées sur des cases touchées (de bâteaux) soient là avec le bon type ;
         — il faut vérifier que les cases non coulées non touchées soient là avec le bon type
         """
-        raise NotImplementedError
+        for type_, _, positions in self.bateaux_coules:
+            for pos in positions:
+                if grille.case(pos) != type_:
+                    return False
+
+        for pos in self._cases_touchees.nonzero():
+            if grille.case(pos) == TypeBateau.Vide:
+                return False
+
+        # TODO: étape 3: vérification des tailles des cases.
+        return True
 
     def tirer(self, case: Point2D) -> RetourDeTir:
         """
