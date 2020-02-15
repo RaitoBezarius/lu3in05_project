@@ -11,6 +11,7 @@ from matplotlib.colors import ListedColormap
 import numpy as np
 from typing import Tuple, Iterable, Optional, Set
 from enum import Enum
+from collections import defaultdict
 
 CMAP_BATAILLE_ARRAY = np.vstack(([0, 0, 0], CMAP_GRILLE_ARRAY))
 
@@ -44,8 +45,8 @@ class Bataille:
 
         # On compte au fur et à mesure le nombre de cases occupées touchées
         # La condition de victoire de la bataille est:
-        #   self._nb_cases_touchees == self.NB_CASES_OCCUPEES
-        self._nb_cases_touchees = 0
+        #   sum(self._nb_cases_touchees) == self.NB_CASES_OCCUPEES
+        self._nb_cases_touchees = defaultdict(lambda: 0)
 
         self.bateaux_coules: List[Tuple[TypeBateau, Direction, Set[Point2D]]] = []
 
@@ -99,10 +100,10 @@ class Bataille:
 
     @property
     def victoire(self) -> bool:
-        return self._nb_cases_touchees == self._nb_cases_occupees
+        return sum(self._nb_cases_touchees.values()) == self._nb_cases_occupees
 
     def affiche(self, **kwargs):
-        pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
+        return pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
     def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
         """

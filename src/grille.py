@@ -209,7 +209,7 @@ class Grille:
     def affiche(self, **kwargs) -> None:
         # FIXME: légender les couleurs automatiquement.
         # Utiliser une cmap custom?
-        pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
+        return pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
 
     def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
         if case not in self.registre_des_positions:

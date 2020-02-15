@@ -4,16 +4,16 @@ from grille import Grille
 import strategie
 import argparse
 import matplotlib.pyplot as plt
+from matplotlib import animation
 
 
 def charge_strategie(name):
     return getattr(strategie, name)
 
 
-def cree_animation(trames):
-    fig = plt.figure()
+def cree_animation(fig, trames):
     return animation.ArtistAnimation(
-        fig, trames, interval=50, blit=True, repeat_delay=1000
+        fig, trames, interval=250, blit=True, repeat_delay=1000
     )
 
 
@@ -54,29 +54,32 @@ def main():
     grille = Grille.generer_grille(
         n=tailles[0], m=tailles[1], facteur_vide=args.facteur_vide
     )
+    if args.animation_bataille and args.animation_grille:
+        raise NotImplementedError("Race condition is occurring when those two options are enabled, try only one")
     print(repr(grille))
     bataille = Bataille(grille)
     strategie = charge_strategie(args.strategie)
 
     trames_bataille = []
     trames_grille = []
+    fig = plt.figure()
+
 
     while not bataille.victoire:
         if args.animation_bataille:
-            trames_bataille.append(bataille.affiche(animated=True))
+            trames_bataille.append([bataille.affiche(fignum=0, animated=True)])
         if args.animation_grille:
-            trames_grille.append(grille.affiche(animated=True))
+            trames_grille.append([grille.affiche(fignum=0, animated=True)])
         cible = strategie.agir(bataille)
         strategie.analyser(bataille, cible, bataille.tirer(cible))
 
     if args.animation_bataille:
-        ani_bataille = cree_animation(trames_bataille)
+        ani_bataille = cree_animation(fig, trames_bataille + [trames_bataille[-1]] * 5)
+        ani_bataille.save('bataille.mp4')
 
     if args.animation_grille:
-        ani_grille = cree_animation(trames_grille)
-
-    if args.animation_bataille or args.animation_grille:
-        plt.show()
+        ani_grille = cree_animation(fig, trames_grille)
+        ani_grille.save('grille.mp4')
 
     print(bataille.score)
 
