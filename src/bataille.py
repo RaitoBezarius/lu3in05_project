@@ -72,7 +72,7 @@ class Bataille:
 
     def tirer(self, case: Point2D) -> int:
         """Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
-        Retourne 1 ssi il y a victoire 0 sinon"""
+        Retourne la valeur de la case touchée"""
         if self.victoire:
             raise UnexpectedGameState("Bataille déjà gagnée")
         else:
@@ -80,9 +80,7 @@ class Bataille:
             self.score = self.score + 1
             if self._grille.case(case) != TypeBateau.Vide.value:
                 self._nb_cases_touchees = self._nb_cases_touchees + 1
-                return self._grille.case(case)
-            else:
-                return 0
+            return self._grille.case(case)
     
     def reset(self) -> None:
         self._cases_touchees = np.zeros(self.tailles)
