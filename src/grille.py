@@ -33,13 +33,15 @@ DIRECTION_GENERATOR = {
 
 Point2D = Tuple[int, int]
 
-CMAP_GRILLE =  ListedColormap(np.array([\
-                                        [0,0,255], \
-                                        [30, 40, 23], \
-                                        [100, 0, 20], \
-                                        [20,200,10], \
-                                        [200,100, 100],\
-                                        [255,255,0]]) / 255)
+CMAP_GRILLE_ARRAY =  np.array([\
+                                [0,0,255], \
+                                [30, 40, 23], \
+                                [100, 0, 20], \
+                                [20,200,10], \
+                                [200,100, 100],\
+                                [255,255,0]]) / 255
+
+CMAP_GRILLE = ListedColormap(CMAP_GRILLE_ARRAY)
 
 def engendre_position_pour_un_bateau(courant: Point2D, type_: TypeBateau, dir_: Direction) -> Iterable[Point2D]:
     length = LONGUEUR_BATEAUX.get(type_)

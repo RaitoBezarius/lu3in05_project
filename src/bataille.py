@@ -1,5 +1,9 @@
 from grille import *
 
+CMAP_BATAILLE_ARRAY = np.vstack(([0,0,0], CMAP_GRILLE_ARRAY))
+
+CMAP_BATAILLE = ListedColormap(CMAP_BATAILLE_ARRAY)
+
 class Bataille:
     def __init__(self, grille: "Grille"):
         #On récupère la grille mais on ne la modifiera jamais
@@ -49,20 +53,20 @@ class Bataille:
 
     def case_touchee(self, case:Point2D) -> bool:
         return self._cases_touchees[case[0], case[1]] == 1
+
+    def case(self, pos: Point2D) -> int:
+        if self.case_touchee(pos):
+            return self.GRILLE.case(pos)
+        else:
+            return -1
     
     @property
     def victoire(self) -> bool:
         return self._victoire
     
     def affiche(self, **kwargs):
-        cmap = ListedColormap(np.array([[0,0,0], \
-                            [50,0,200], \
-                            [30, 40, 23], \
-                            [100, 0, 20], \
-                            [20,200,10], \
-                            [200,100, 100],\
-                            [255,255,0]]) / 255)
-        pyplot.matshow(((self.GRILLE.inner + 1) * self._cases_touchees), cmap = cmap, **kwargs)
+        
+        pyplot.matshow(((self.GRILLE.inner + 1) * self._cases_touchees), cmap = CMAP_BATAILLE, **kwargs)
     
     @property
     def nb_cases_touchees(self) -> int:
@@ -73,33 +77,34 @@ class Bataille:
         Retourne 1 ssi il y a victoire 0 sinon"""
         if self._victoire:
             print("Vous avez déjà gagné!")
-            return 1
+            return -1
         else:
             self._cases_touchees[case[0], case[1]] = 1
             self._score = self._score + 1
-            if self.GRILLE.case(case) != TypeBateau.Vide:
+            if self.GRILLE.case(case) != TypeBateau.Vide.value:
+                print(self.case(case))
                 self._nb_cases_touchees = self._nb_cases_touchees + 1
                 if self._nb_cases_touchees == self.NB_CASES_OCCUPEES:
                     self._victoire = True
-                    print("Victoire! Score: {1}".format(self._score))
-                    return 1
+                    print("Victoire! Score: {0}".format(self._score))
+                    return -1
+                else:
+                    return self.GRILLE.case(case)
             else:
                 return 0
     
 
-grille = Grille.generer_grille(n = 100, m = 100)
-while(grille.est_vide):
-    grille = Grille.generer_grille(n = 100, m = 100)
-
-b = Bataille(grille)
-print(b)
-
-for i in range(1000):
-    case = tirer_point_uniformement(b.tailles)
-    if not b.case_touchee(case):
-        b.tirer(case)
-
-print(repr(b))
+grille = Grille(20,6)
+grille.place(TypeBateau.PorteAvions, (0,0), Direction.Horizontal, en_place = True)
+grille.place(TypeBateau.Croiseur, (0,1), Direction.Horizontal, en_place = True)
+grille.place(TypeBateau.ContreTorpilleurs,(0,2), Direction.Horizontal, en_place = True)
+grille.place(TypeBateau.SousMarin, (0,3), Direction.Horizontal, en_place = True)
 grille.affiche()
-b.affiche()
+
+bat = Bataille(grille)
+while not bat.victoire:
+    case = tirer_point_uniformement(bat.tailles)
+    if not bat.case_touchee(case):
+        bat.tirer(case)
+bat.affiche()
 pyplot.show()
