@@ -1,6 +1,7 @@
 from bataille import Bataille, RetourDeTir
 from grille import Point2D
 
+
 class StrategieBase:
     def __init__(self):
         pass

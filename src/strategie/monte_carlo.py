@@ -1,34 +1,49 @@
 from strategie.base import StrategieBase
-from strategie.probabiliste import StrategieProbabilisteSimple, generer_placement_admissibles
+from strategie.probabiliste import (
+    StrategieProbabilisteSimple,
+    generer_placement_admissibles,
+)
 from bataille import InvalidGameState, Bataille
 from grille import Point2D, Grille
 from typing import Set, Iterable, Tuple
 import random
 import numpy as np
 
+
 def generer_choix(bateaux_non_coules: Set[Point2D]) -> Tuple[Set[Point2D], Point2D]:
-    bateau, = random.sample(bateaux_non_coules, 1)
+    (bateau,) = random.sample(bateaux_non_coules, 1)
     return (bateaux_non_coules - {bateau}, bateau)
 
-def generer_grille(bataille: Bataille, bateaux_non_coules: Set[Point2D]) -> Iterable[Grille]:
+
+def generer_grille(
+    bataille: Bataille, bateaux_non_coules: Set[Point2D]
+) -> Iterable[Grille]:
     if not bateaux_non_coules:
-        raise ValueError("Le champ de bataille ne contient pas de cases touchées non coulées, aucun placement admissible ne sera calculable")
+        raise ValueError(
+            "Le champ de bataille ne contient pas de cases touchées non coulées, aucun placement admissible ne sera calculable"
+        )
 
     stack = [(generer_choix(bateaux_non_coules), bataille.creer_grille_connue())]
     while stack:
         (bateau_non_coule, bateaux_restants), grille = stack.pop()
-        placements_admissibles = generer_placement_admissibles(bataille, bateau_non_coule)
+        placements_admissibles = generer_placement_admissibles(
+            bataille, bateau_non_coule
+        )
 
         if not placements_admissibles:
-            raise InvalidGameState("Aucun placement admissible n'était disponible pour un bâteau non coulé, absurdité")
+            raise InvalidGameState(
+                "Aucun placement admissible n'était disponible pour un bâteau non coulé, absurdité"
+            )
 
         for placement in placements_admissibles:
             grille.place(*placement)
             if bateaux_restants:
                 stack.append((generer_choix(bateaux_restants), grille))
-            elif not bateaux_restants and bataille.compatible_avec_les_contraintes(grille): # i.e. toutes les cases touchées sont occupées par un bâteau.
+            elif not bateaux_restants and bataille.compatible_avec_les_contraintes(
+                grille
+            ):  # i.e. toutes les cases touchées sont occupées par un bâteau.
                 yield grille
-                break # on pourrait enlever ce break et générer plus de grilles.
+                break  # on pourrait enlever ce break et générer plus de grilles.
 
 
 class StrategieMonteCarlo(StrategieProbabilisteSimple):

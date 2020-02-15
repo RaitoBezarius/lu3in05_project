@@ -34,16 +34,19 @@ DIRECTION_GENERATOR = {Direction.Horizontal: (1, 0), Direction.Vertical: (0, 1)}
 
 Point2D = Tuple[int, int]
 
-CMAP_GRILLE_ARRAY = np.array(
-                                [
-                                    [0, 0, 255],
-                                    [30, 40, 23],
-                                    [100, 0, 20],
-                                    [20, 200, 10],
-                                    [200, 100, 100],
-                                    [255, 255, 0],
-                                ]
-                            ) / 255
+CMAP_GRILLE_ARRAY = (
+    np.array(
+        [
+            [0, 0, 255],
+            [30, 40, 23],
+            [100, 0, 20],
+            [20, 200, 10],
+            [200, 100, 100],
+            [255, 255, 0],
+        ]
+    )
+    / 255
+)
 
 CMAP_GRILLE = ListedColormap(CMAP_GRILLE_ARRAY)
 
@@ -259,7 +262,12 @@ class Grille:
         return g
 
     @classmethod
-    def depuis_tableau(cls, inner: np.array, reg_bateaux: Dict[Point2D, Set[Point2D]], reg_positions: Dict[Point2D, Point2D]) -> "Grille":
+    def depuis_tableau(
+        cls,
+        inner: np.array,
+        reg_bateaux: Dict[Point2D, Set[Point2D]],
+        reg_positions: Dict[Point2D, Point2D],
+    ) -> "Grille":
         n, m = inner.shape
         g = cls(n, m)
         g.inner = inner

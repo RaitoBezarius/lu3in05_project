@@ -5,11 +5,16 @@ from bataille import Bataille
 import numpy as np
 
 Placement = Tuple[TypeBateau, Point2D, Direction]
-def generer_placement_admissibles(bataille: Bataille, bateau: Point2D) -> Iterable[Placement]:
+
+
+def generer_placement_admissibles(
+    bataille: Bataille, bateau: Point2D
+) -> Iterable[Placement]:
     # idée: faire un DFS sur la case bateau
     # cela nous donne la composante connexe de bateau
     # ensuite pour toute case de la composante connexe, on a un certain nombre de types de bâteaux qu'on peut poser en horizontal ou vertical.
     pass
+
 
 class StrategieProbabilisteSimple(StrategieAvecMemoire):
     def evaluer(self, bataille: Bataille, grille_candidate: Grille) -> np.array:
@@ -21,7 +26,9 @@ class StrategieProbabilisteSimple(StrategieAvecMemoire):
         # générer leur placement admissible
         pass
 
-    def agir_selon_probabilites(self, bataille: Bataille, grille_proba: np.array) -> Point2D:
+    def agir_selon_probabilites(
+        self, bataille: Bataille, grille_proba: np.array
+    ) -> Point2D:
         """
         Joue la case de probabilité maximale.
         """

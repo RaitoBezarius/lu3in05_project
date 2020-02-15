@@ -2,6 +2,7 @@ from strategie.base import StrategieBase
 from grille import Point2D
 from bataille import Bataille, RetourDeTir
 
+
 class StrategieAvecMemoire(StrategieBase):
     def __init__(self):
         super().__init__()
