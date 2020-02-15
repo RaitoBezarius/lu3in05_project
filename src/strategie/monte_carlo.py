@@ -11,7 +11,7 @@ def generer_choix(bateaux_non_coules: Set[Point2D]) -> Tuple[Set[Point2D], Point
     return (bateaux_non_coules - {bateau}, bateau)
 
 def generer_grille(bataille: Bataille, bateaux_non_coules: Set[Point2D]) -> Iterable[Grille]:
-    if not bataille.cases_touchees_non_coulees:
+    if not bateaux_non_coules:
         raise ValueError("Le champ de bataille ne contient pas de cases touchées non coulées, aucun placement admissible ne sera calculable")
 
     stack = [(generer_choix(bateaux_non_coules), bataille.creer_grille_connue())]
@@ -33,9 +33,10 @@ def generer_grille(bataille: Bataille, bateaux_non_coules: Set[Point2D]) -> Iter
 
 class StrategieMonteCarlo(StrategieProbabilisteSimple):
     def agir(self, bataille: Bataille) -> Point2D:
+        # FIXME: cette stratégie n'agira pas correctement car il faut qu'elle tire au pif pour commencer
         p_grille = np.zeros(bataille.tailles)
         n = 0
-        for grille in generer_grille(bataille, self.cases_touchees_non_coules):
+        for grille in generer_grille(bataille, self.cases_touchees_non_coulees):
             p_grille += self.evaluer(bataille, grille)
             n += 1
 

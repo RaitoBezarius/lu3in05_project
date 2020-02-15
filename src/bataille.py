@@ -3,7 +3,7 @@ from grille import Grille, Point2D, CMAP_GRILLE_ARRAY, tirer_point_uniformement,
 from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 import numpy as np
-from typing import Tuple, Iterable
+from typing import Tuple, Iterable, Optional, List
 from enum import Enum
 
 CMAP_BATAILLE_ARRAY = np.vstack(([0,0,0], CMAP_GRILLE_ARRAY))
@@ -11,6 +11,9 @@ CMAP_BATAILLE_ARRAY = np.vstack(([0,0,0], CMAP_GRILLE_ARRAY))
 CMAP_BATAILLE = ListedColormap(CMAP_BATAILLE_ARRAY)
 
 class InvalidGameState(Exception):
+    pass
+
+class InvalidAction(Exception):
     pass
 
 class RetourDeTir(Enum):
@@ -51,7 +54,7 @@ class Bataille:
 
     def __str__(self):
         n, m = self.tailles
-        return "<Bataille {} {}X{} Score = {}>".format("gagnée" if self._victoire else "en cours", n, m, self.score)
+        return "<Bataille {} {}×{}, score: {}>".format("gagnée" if self.victoire else "en cours", n, m, self.score)
 
     @property
     def tailles(self) -> Point2D:
@@ -60,8 +63,14 @@ class Bataille:
     def est_dans_la_grille(self, pos: Point2D) -> bool:
         return self._grille.est_dans_la_grille(pos)
 
+    def etat_de_case(self, case: Point2D) -> Optional[RetourDeTir]:
+        return RetourDeTir[self._cases_touchees[case[0], case[1]]] if self._cases_touchees[case[0], case[1]] != 0 else None
+
     def case_touchee(self, case:Point2D) -> bool:
-        return self._cases_touchees[case[0], case[1]] == 1
+        return self.etat_de_case(case) == RetourDeTir.Touchee
+
+    def case_coulee(self, case: Point2D) -> bool:
+        return self.etat_de_case(case) == RetourDeTir.Coulee
 
     def case(self, pos: Point2D) -> int:
         if self.case_touchee(pos):
@@ -76,21 +85,39 @@ class Bataille:
     def affiche(self, **kwargs):
         pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
+    def obtenir_bateau(self, case: Point2D) -> List[Point2D]:
+        """
+        Si la case a été coulée, donc le bâteau est devenu visible, il faut retourner les points du bâteau.
+        """
+        if not self.case_coulee(case):
+            raise InvalidAction("Le bâteau n'a pas encore été coulé! Il est donc impossible de récupérer ses coordonnées")
+
+        return self._grille.obtenir_bateau(case)
+
     def tirer(self, case: Point2D) -> RetourDeTir:
         """
         Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
         """
         if self.victoire:
             raise InvalidGameState("Bataille déjà gagnée")
+
+        if not self.est_dans_la_grille(case):
+            raise InvalidAction("Case hors de la grille!")
+
+        self.score = self.score + 1
+        if self._grille.case(case) != TypeBateau.Vide.value and self.etat_de_case(case) is None:
+            # on récupère une référence canonique au bâteau, peu importe sa case.
+            type_, c_pos = self._grille.reference_bateau(case)
+            # on augmente le nombre de cases touchées.
+            self._nb_cases_touchees[c_pos] += 1
+            # on détermine si on a coulé ou touchée seulement le bâteau.
+            retour = RetourDeTir.Coulee if self._nb_cases_touchees == type_.value else RetourDeTir.Touchee
+            # on note la valeur de retour.
+            self._cases_touchees[case[0], case[1]] = retour.value
+            # on redonne le retour.
+            return retour
         else:
-            self._cases_touchees[case[0], case[1]] = 1
-            self.score = self.score + 1
-            if self._grille.case(case) != TypeBateau.Vide.value:
-                self._nb_cases_touchees = self._nb_cases_touchees + 1
-                # FIXME: retourner touchée ou coulée
-                return self._grille.case(case)
-            else:
-                return RetourDeTir.Vide
+            return self.etat_de_case(case) or RetourDeTir.Vide
 
     def reset(self) -> None:
         self._cases_touchees = np.zeros(self.tailles)

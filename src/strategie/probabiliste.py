@@ -1,4 +1,4 @@
-from strategie.base import StrategieBase
+from strategie.memoire import StrategieAvecMemoire
 from typing import Tuple, Iterable
 from grille import TypeBateau, Point2D, Direction, Grille
 from bataille import Bataille
@@ -11,10 +11,7 @@ def generer_placement_admissibles(bataille: Bataille, bateau: Point2D) -> Iterab
     # ensuite pour toute case de la composante connexe, on a un certain nombre de types de bâteaux qu'on peut poser en horizontal ou vertical.
     pass
 
-class StrategieProbabilisteSimple(StrategieBase):
-    def __init__(self):
-        pass
-
+class StrategieProbabilisteSimple(StrategieAvecMemoire):
     def evaluer(self, bataille: Bataille, grille_candidate: Grille) -> np.array:
         """
         Compte tenu des contraintes du champ de bataille actuel, nous faisons l'hypothèse que le champ de bataille est la grille passée en paramètre.

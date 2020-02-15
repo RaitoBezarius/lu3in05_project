@@ -4,6 +4,7 @@ from bataille import Bataille, RetourDeTir
 
 class StrategieAvecMemoire(StrategieBase):
     def __init__(self):
+        super().__init__()
         self.cases_touchees_non_coulees = set()
 
     def analyser(self, bataille: Bataille, cible: Point2D, retour: RetourDeTir):
