@@ -18,7 +18,7 @@ class Bataille:
         self._grille = grille
 
         #On enregistre dans un np.array si les cases ont été touchées ou non
-        self._cases_touchees = np.zeros(grille.tailles)
+        self._cases_touchees = np.zeros(self.tailles)
 
         #On récupère en tant que constante le nombre de cases occupées
         self._nb_cases_occupees = grille.nb_cases_occupees
@@ -44,7 +44,7 @@ class Bataille:
         return repr(self.fog_of_war())
 
     def __str__(self):
-        n, m = self._grille.tailles
+        n, m = self.tailles
         return "<Bataille {} {}X{} Score = {}>".format("gagnée" if self._victoire else "en cours", n, m, self.score)
 
     @property
@@ -68,7 +68,7 @@ class Bataille:
         return self._nb_cases_touchees == self._nb_cases_occupees
 
     def affiche(self, **kwargs):
-        pyplot.matshow(self.fog_of_war(), cmap = CMAP_BATAILLE, **kwargs)
+        pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
     def tirer(self, case: Point2D) -> int:
         """Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
