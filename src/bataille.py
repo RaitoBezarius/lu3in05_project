@@ -4,12 +4,13 @@ from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 import numpy as np
 from typing import Tuple, Iterable
+from enum import Enum
 
 CMAP_BATAILLE_ARRAY = np.vstack(([0,0,0], CMAP_GRILLE_ARRAY))
 
 CMAP_BATAILLE = ListedColormap(CMAP_BATAILLE_ARRAY)
 
-class UnexpectedGameState(Exception):
+class InvalidGameState(Exception):
     pass
 
 class RetourDeTir(Enum):
@@ -80,7 +81,7 @@ class Bataille:
         Cette fonction assume que le point case est inclus dans la grille et qu'il n'a jamais été touché par un tir
         """
         if self.victoire:
-            raise UnexpectedGameState("Bataille déjà gagnée")
+            raise InvalidGameState("Bataille déjà gagnée")
         else:
             self._cases_touchees[case[0], case[1]] = 1
             self.score = self.score + 1
@@ -96,19 +97,3 @@ class Bataille:
         self._nb_cases_touchees = 0
         self.score = 0
 
-
-grille = Grille(20,6)
-grille.place(TypeBateau.PorteAvions, (0,0), Direction.Horizontal, en_place = True)
-grille.place(TypeBateau.Croiseur, (0,1), Direction.Horizontal, en_place = True)
-grille.place(TypeBateau.ContreTorpilleurs,(0,2), Direction.Horizontal, en_place = True)
-grille.place(TypeBateau.SousMarin, (0,3), Direction.Horizontal, en_place = True)
-grille.affiche()
-
-bat = Bataille(grille)
-while not bat.victoire:
-    case = tirer_point_uniformement(bat.tailles)
-    if not bat.case_touchee(case):
-        bat.tirer(case)
-bat.reset()
-bat.affiche()
-pyplot.show()
