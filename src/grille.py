@@ -3,6 +3,7 @@ from typing import Tuple, Iterable
 import random
 from enum import IntEnum
 from matplotlib import pyplot
+from matplotlib.colors import ListedColormap
 
 class TypeBateau(IntEnum):
     Vide = 0
@@ -32,6 +33,14 @@ DIRECTION_GENERATOR = {
 
 Point2D = Tuple[int, int]
 
+CMAP_GRILLE =  ListedColormap(np.array([\
+                                        [0,0,255], \
+                                        [30, 40, 23], \
+                                        [100, 0, 20], \
+                                        [20,200,10], \
+                                        [200,100, 100],\
+                                        [255,255,0]]) / 255)
+
 def engendre_position_pour_un_bateau(courant: Point2D, type_: TypeBateau, dir_: Direction) -> Iterable[Point2D]:
     length = LONGUEUR_BATEAUX.get(type_)
     if length is None:
@@ -49,7 +58,7 @@ def engendre_position_pour_un_bateau(courant: Point2D, type_: TypeBateau, dir_: 
 def tirer_point_uniformement(tailles: Tuple[int, int]) -> Point2D:
     n, m = tailles
     total = n*m
-    k = random.randint(0, total)
+    k = random.randint(0, total - 1)
     # interprétation phi : [[0, nb_cases_totales - 1]] → [[0, n - 1]] × [[0, m - 1]]
     #                             k                →     (k   mod  n,   k intdiv n)
     # où intdiv est la division entière.
@@ -94,6 +103,10 @@ class Grille:
         n, m = self.tailles
 
         return 0 <= x < n and 0 <= y < m
+
+    @property
+    def est_vide(self):
+        return self.nb_cases_occupees == 0
 
     def case(self, pos: Point2D) -> int:
         if not self.est_dans_la_grille(pos):
@@ -157,7 +170,7 @@ class Grille:
     def affiche(self, **kwargs) -> None:
         # FIXME: légender les couleurs automatiquement.
         # Utiliser une cmap custom?
-        pyplot.matshow(self.inner, **kwargs)
+        pyplot.matshow(self.inner, cmap = CMAP_GRILLE, **kwargs)
 
     def __eq__(self, other: 'Grille') -> bool:
         assert isinstance(other, Grille), "L'égalité de grilles ne peut être fait qu'entre instances de `Grille`"
