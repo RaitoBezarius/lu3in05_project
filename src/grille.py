@@ -5,6 +5,7 @@ from enum import IntEnum
 from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 
+
 class TypeBateau(IntEnum):
     Vide = 0
     PorteAvions = 1
@@ -13,9 +14,11 @@ class TypeBateau(IntEnum):
     SousMarin = 4
     Torpilleur = 5
 
+
 class Direction(IntEnum):
     Horizontal = 1
     Vertical = 2
+
 
 LONGUEUR_BATEAUX = {
     TypeBateau.Vide: 0,
@@ -23,27 +26,31 @@ LONGUEUR_BATEAUX = {
     TypeBateau.Croiseur: 4,
     TypeBateau.ContreTorpilleurs: 3,
     TypeBateau.SousMarin: 3,
-    TypeBateau.Torpilleur: 2
+    TypeBateau.Torpilleur: 2,
 }
 
-DIRECTION_GENERATOR = {
-    Direction.Horizontal: (1, 0),
-    Direction.Vertical: (0, 1)
-}
+DIRECTION_GENERATOR = {Direction.Horizontal: (1, 0), Direction.Vertical: (0, 1)}
 
 Point2D = Tuple[int, int]
 
-CMAP_GRILLE_ARRAY =  np.array([\
-                                [0,0,255], \
-                                [30, 40, 23], \
-                                [100, 0, 20], \
-                                [20,200,10], \
-                                [200,100, 100],\
-                                [255,255,0]]) / 255
+CMAP_GRILLE = ListedColormap(
+    np.array(
+        [
+            [0, 0, 255],
+            [30, 40, 23],
+            [100, 0, 20],
+            [20, 200, 10],
+            [200, 100, 100],
+            [255, 255, 0],
+        ]
+    )
+    / 255
+)
 
-CMAP_GRILLE = ListedColormap(CMAP_GRILLE_ARRAY)
 
-def engendre_position_pour_un_bateau(courant: Point2D, type_: TypeBateau, dir_: Direction) -> Iterable[Point2D]:
+def engendre_position_pour_un_bateau(
+    courant: Point2D, type_: TypeBateau, dir_: Direction
+) -> Iterable[Point2D]:
     length = LONGUEUR_BATEAUX.get(type_)
     if length is None:
         raise ValueError("`type_` n'est pas un type de bâteau connu")
@@ -55,11 +62,12 @@ def engendre_position_pour_un_bateau(courant: Point2D, type_: TypeBateau, dir_: 
     x, y = courant
     delta_x, delta_y = delta
     for k in range(length + 1):
-        yield (x + k*delta_x, y + k*delta_y)
+        yield (x + k * delta_x, y + k * delta_y)
+
 
 def tirer_point_uniformement(tailles: Tuple[int, int]) -> Point2D:
     n, m = tailles
-    total = n*m
+    total = n * m
     k = random.randint(0, total - 1)
     # interprétation phi : [[0, nb_cases_totales - 1]] → [[0, n - 1]] × [[0, m - 1]]
     #                             k                →     (k   mod  n,   k intdiv n)
@@ -68,6 +76,7 @@ def tirer_point_uniformement(tailles: Tuple[int, int]) -> Point2D:
     # il faut voir que k = ny + x.
 
     return (k % n, k // n)
+
 
 def tirer_direction_uniformement() -> Direction:
     i = random.randint(1, 2)
@@ -82,7 +91,7 @@ class Grille:
         return repr(self.inner)
 
     def __str__(self):
-        return '<Grille {} × {}>'.format(*self.inner.shape)
+        return "<Grille {} × {}>".format(*self.inner.shape)
 
     @property
     def nb_cases_totales(self) -> int:
@@ -129,11 +138,13 @@ class Grille:
 
         n, m = self.tailles
         for dir_ in Direction:
-            dx = dir_.value % 2 # vaut 1 si dir_ = Horizontal, 0 sinon.
-            dy = 1 - dx # vaut 1 si dir_ = Vertical, 0 sinon.
+            dx = dir_.value % 2  # vaut 1 si dir_ = Horizontal, 0 sinon.
+            dy = 1 - dx  # vaut 1 si dir_ = Vertical, 0 sinon.
             courant = [0, 0]
 
-            for z in range(dx*n + dy*m - length): # dx*n + dy*m = n ou m ; par construction.
+            for z in range(
+                dx * n + dy * m - length
+            ):  # dx*n + dy*m = n ou m ; par construction.
                 if self.peut_placer(type_, tuple(courant), dir_):
                     return True
 
@@ -143,8 +154,9 @@ class Grille:
 
         return False
 
-
-    def place(self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = False) -> 'Grille':
+    def place(
+        self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = False
+    ) -> "Grille":
         inner = self.inner
         if not en_place:
             inner = self.inner.copy()
@@ -157,7 +169,7 @@ class Grille:
         else:
             return Grille.depuis_tableau(inner)
 
-    def place_alea(self, type_: TypeBateau, en_place: bool = False) -> 'Grille':
+    def place_alea(self, type_: TypeBateau, en_place: bool = False) -> "Grille":
         """
         Cette fonction fait l'hypothèse qu'il existe un emplacement admissible, sinon elle bouclera infiniement.
         """
@@ -172,14 +184,18 @@ class Grille:
     def affiche(self, **kwargs) -> None:
         # FIXME: légender les couleurs automatiquement.
         # Utiliser une cmap custom?
-        pyplot.matshow(self.inner, cmap = CMAP_GRILLE, **kwargs)
+        pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
 
-    def __eq__(self, other: 'Grille') -> bool:
-        assert isinstance(other, Grille), "L'égalité de grilles ne peut être fait qu'entre instances de `Grille`"
+    def __eq__(self, other: "Grille") -> bool:
+        assert isinstance(
+            other, Grille
+        ), "L'égalité de grilles ne peut être fait qu'entre instances de `Grille`"
         return self.inner == other.inner
 
     @classmethod
-    def generer_grille(cls, *, n: int = 10, m: int = 10, facteur_vide: float = 0.3) -> 'Grille':
+    def generer_grille(
+        cls, *, n: int = 10, m: int = 10, facteur_vide: float = 0.3
+    ) -> "Grille":
         """
         Analyse probabiliste:
 
@@ -201,8 +217,12 @@ class Grille:
         FIXME: cette fonction génère trop de grilles vides.
         """
         g = cls(n, m)
-        maxNbBateau = random.randint(0, g.nb_cases_totales // 2) # TODO: remplacer 2 par nonzero_min(LONGUEUR_BATEAUX.values())
-        nbBateau = random.randint(0, facteur_vide*g.nb_cases_totales) # nombre de cases vides.
+        maxNbBateau = random.randint(
+            0, g.nb_cases_totales // 2
+        )  # TODO: remplacer 2 par nonzero_min(LONGUEUR_BATEAUX.values())
+        nbBateau = random.randint(
+            0, facteur_vide * g.nb_cases_totales
+        )  # nombre de cases vides.
         for bateau in TypeBateau:
             if nbBateau >= maxNbBateau:
                 break
@@ -210,17 +230,23 @@ class Grille:
             if bateau == TypeBateau.Vide:
                 continue
 
-            maxNbBateauDeCeType = random.randint(0, g.nb_cases_vides // int(bateau)) # c'est une majoration grossière qui ne tient pas compte de la contrainte de direction.
+            maxNbBateauDeCeType = random.randint(
+                0, g.nb_cases_vides // int(bateau)
+            )  # c'est une majoration grossière qui ne tient pas compte de la contrainte de direction.
             nbBateauDeCeType = 0
-            while g.peut_placer_quelque_part(bateau) and nbBateau < maxNbBateau and nbBateauDeCeType < maxNbBateauDeCeType:
+            while (
+                g.peut_placer_quelque_part(bateau)
+                and nbBateau < maxNbBateau
+                and nbBateauDeCeType < maxNbBateauDeCeType
+            ):
                 g.place_alea(bateau, en_place=True)
                 nbBateau += 1
                 nbBateauDeCeType += 1
         return g
 
     @classmethod
-    def depuis_tableau(cls, inner: np.array) -> 'Grille':
-        n, m  = inner.shape
+    def depuis_tableau(cls, inner: np.array) -> "Grille":
+        n, m = inner.shape
         g = cls(n, m)
         g.inner = inner
         return g
