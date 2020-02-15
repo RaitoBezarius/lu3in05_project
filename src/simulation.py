@@ -49,7 +49,6 @@ def main():
     if args.animation_grille:
         ani_grille = cree_animation(trames_grille)
 
-    print(args.animation_bataille, args.animation_grille)
     if args.animation_bataille or args.animation_grille:
         plt.show()
 

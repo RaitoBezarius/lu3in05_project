@@ -35,7 +35,7 @@ class StrategieMonteCarlo(StrategieProbabilisteSimple):
     def agir(self, bataille: Bataille) -> Point2D:
         p_grille = np.zeros(bataille.tailles)
         n = 0
-        for grille in generer_grille(bataille, bataille.cases_touchees_non_coules):
+        for grille in generer_grille(bataille, self.cases_touchees_non_coules):
             p_grille += self.evaluer(bataille, grille)
             n += 1
 
