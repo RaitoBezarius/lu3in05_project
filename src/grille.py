@@ -164,7 +164,7 @@ class Grille:
         return self.inner == other.inner
 
     @classmethod
-    def generer_grille(cls, facteur_vide: float = 0.3) -> 'Grille':
+    def generer_grille(cls, *, n: int = 10, m: int = 10, facteur_vide: float = 0.3) -> 'Grille':
         """
         Analyse probabiliste:
 
@@ -185,7 +185,7 @@ class Grille:
 
         FIXME: cette fonction génère trop de grilles vides.
         """
-        g = cls()
+        g = cls(n, m)
         maxNbBateau = random.randint(0, g.nb_cases_totales // 2) # TODO: remplacer 2 par nonzero_min(LONGUEUR_BATEAUX.values())
         nbBateau = random.randint(0, facteur_vide*g.nb_cases_totales) # nombre de cases vides.
         for bateau in TypeBateau:
