@@ -85,7 +85,7 @@ class Bataille:
                 return 0
     
     def reset(self) -> None:
-        self._cases_touchees = np.zeros(grille.tailles)
+        self._cases_touchees = np.zeros(self.tailles)
         self._nb_cases_touchees = 0
         self.score = 0
     
