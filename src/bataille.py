@@ -3,7 +3,7 @@ from grille import Grille, Point2D, CMAP_GRILLE_ARRAY, tirer_point_uniformement,
 from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 import numpy as np
-from typing import Tuple, Iterable, Optional, List
+from typing import Tuple, Iterable, Optional, Set
 from enum import Enum
 
 CMAP_BATAILLE_ARRAY = np.vstack(([0,0,0], CMAP_GRILLE_ARRAY))
@@ -85,7 +85,7 @@ class Bataille:
     def affiche(self, **kwargs):
         pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
 
-    def obtenir_bateau(self, case: Point2D) -> List[Point2D]:
+    def obtenir_bateau(self, case: Point2D) -> Set[Point2D]:
         """
         Si la case a été coulée, donc le bâteau est devenu visible, il faut retourner les points du bâteau.
         """
@@ -93,6 +93,21 @@ class Bataille:
             raise InvalidAction("Le bâteau n'a pas encore été coulé! Il est donc impossible de récupérer ses coordonnées")
 
         return self._grille.obtenir_bateau(case)
+
+    def creer_grille_connue(self) -> Grille:
+        """
+        À partir de l'ensemble des cases coulées, on peut calculer une grille partielle.
+        """
+        pass
+
+    def compatible_avec_les_contraintes(self, grille: Grille) -> bool:
+        """
+        Détermine si la grille fournie est compatible avec les cases déjà coulées:
+        — il faut vérifier que les cases coulées soient là avec le bon type ;
+        — il faut vérifier que les cases non coulées mais proposées sur des cases touchées (de bâteaux) soient là avec le bon type ;
+        — il faut vérifier que les cases non coulées non touchées soient là avec le bon type
+        """
+        raise NotImplementedError
 
     def tirer(self, case: Point2D) -> RetourDeTir:
         """

@@ -12,5 +12,4 @@ class StrategieAvecMemoire(StrategieBase):
             self.cases_touchees_non_coulees.add(cible)
 
         if retour == RetourDeTir.Coulee:
-            for point in bataille.obtenir_bateau(cible):
-                self.cases_touchees_non_coulees.remove(point)
+            self.cases_touchees_non_coulees -= bataille.obtenir_bateau(cible)

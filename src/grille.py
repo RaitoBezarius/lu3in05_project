@@ -1,7 +1,8 @@
 import numpy as np
-from typing import Tuple, Iterable
+from typing import Tuple, Iterable, Set, Dict
 import random
 from enum import IntEnum
+from collections import defaultdict
 from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 
@@ -85,6 +86,8 @@ def tirer_direction_uniformement() -> Direction:
 class Grille:
     def __init__(self, n=10, m=10):
         self.inner = np.zeros((n, m), np.uint8)
+        self.registre_des_bateaux = defaultdict(set)
+        self.registre_des_positions = dict()
 
     def __repr__(self):
         return repr(self.inner)
@@ -157,16 +160,22 @@ class Grille:
         self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = False
     ) -> "Grille":
         inner = self.inner
+        reg_bateaux = self.registre_des_bateaux
+        reg_positions = self.registre_des_positions
         if not en_place:
             inner = self.inner.copy()
+            reg_bateaux = self.registre_des_bateaux.copy()
+            reg_positions = self.registre_des_positions.copy()
 
-        for pos in engendre_position_pour_un_bateau(pos, type_, dir_):
-            inner[pos[0]][pos[1]] = type_.value
+        for pos_ in engendre_position_pour_un_bateau(pos, type_, dir_):
+            inner[pos_[0], pos[1]] = type_.value
+            reg_bateaux[pos].add(pos_)
+            reg_positions[pos_] = pos
 
         if en_place:
             return self
         else:
-            return Grille.depuis_tableau(inner)
+            return Grille.depuis_tableau(inner, reg_bateaux, reg_positions)
 
     def place_alea(self, type_: TypeBateau, en_place: bool = False) -> "Grille":
         """
@@ -184,6 +193,12 @@ class Grille:
         # FIXME: légender les couleurs automatiquement.
         # Utiliser une cmap custom?
         pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
+
+    def obtenir_bateau(self, case: Point2D) -> Set[Point2D]:
+        if case not in self.registre_des_positions:
+            raise ValueError("Cette position n'est pas enregistré pour un bâteau")
+        c_pos = self.registre_des_positions.get(case)
+        return self.registre_des_bateaux[c_pos]
 
     def __eq__(self, other: "Grille") -> bool:
         assert isinstance(
@@ -244,8 +259,10 @@ class Grille:
         return g
 
     @classmethod
-    def depuis_tableau(cls, inner: np.array) -> "Grille":
+    def depuis_tableau(cls, inner: np.array, reg_bateaux: Dict[Point2D, Set[Point2D]], reg_positions: Dict[Point2D, Point2D]) -> "Grille":
         n, m = inner.shape
         g = cls(n, m)
         g.inner = inner
+        g.reg_bateaux = reg_bateaux
+        g.reg_positions = reg_positions
         return g
