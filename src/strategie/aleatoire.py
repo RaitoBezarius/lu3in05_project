@@ -8,9 +8,8 @@ class StrategieAleatoire(StrategieBase):
         self.positions_deja_jouees = set()
 
     def agir(self, bataille: Bataille) -> Point2D:
-        n, m = bataille.tailles
         while True:
-            g = Grille.generer_grille(n=n, m=m)
+            g = Grille.generer_grille(tailles=bataille.tailles)
             for p in g.registre_des_positions.keys():
                 if p not in self.positions_deja_jouees:
                     return p

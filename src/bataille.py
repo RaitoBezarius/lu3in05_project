@@ -1,21 +1,29 @@
 from grille import (
     Grille,
     Point2D,
-    CMAP_GRILLE_ARRAY,
     tirer_point_uniformement,
     TypeBateau,
     Direction,
+    LONGUEUR_BATEAUX
 )
 from matplotlib import pyplot
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, BoundaryNorm
 import numpy as np
 from typing import Tuple, Iterable, Optional, Set
 from enum import Enum
 from collections import defaultdict
 
-CMAP_BATAILLE_ARRAY = np.vstack(([0, 0, 0], CMAP_GRILLE_ARRAY))
+CMAP_BATAILLE_ARRAY = [
+    'xkcd:azure', # inconnu
+    'xkcd:white', # vide
+    'xkcd:violet', # touché
+    'xkcd:crimson', # coulé
+]
 
-CMAP_BATAILLE = ListedColormap(CMAP_BATAILLE_ARRAY)
+
+BATAILLE_CMAP = ListedColormap(CMAP_BATAILLE_ARRAY)
+BATAILLE_BOUNDS = [0, 1, 2, 3, 4]
+BATAILLE_NORM = BoundaryNorm(BATAILLE_BOUNDS, BATAILLE_CMAP.N)
 
 
 class InvalidGameState(Exception):
@@ -30,6 +38,7 @@ class RetourDeTir(Enum):
     Vide = 1
     Touchee = 2
     Coulee = 3
+    Inconnu = 0
 
 
 class Bataille:
@@ -38,7 +47,7 @@ class Bataille:
         self._grille = grille
 
         # On enregistre dans un np.array si les cases ont été touchées ou non
-        self._cases_touchees = np.zeros(self.tailles)
+        self._cases_touchees = np.zeros(self.tailles, np.uint8)
 
         # On récupère en tant que constante le nombre de cases occupées
         self._nb_cases_occupees = grille.nb_cases_occupees
@@ -61,7 +70,7 @@ class Bataille:
                 f(x,y) =(x + 1) * y - 1
             On vérifie que c'est bien ce qu'on souhaite"""
         # FIXME: le fog of war doit afficher les cases coulées entièrement.
-        return ((self._grille.inner + 1) * self._cases_touchees) - 1
+        return self._cases_touchees
 
     def __repr__(self):
         return repr(self.fog_of_war())
@@ -79,12 +88,8 @@ class Bataille:
     def est_dans_la_grille(self, pos: Point2D) -> bool:
         return self._grille.est_dans_la_grille(pos)
 
-    def etat_de_case(self, case: Point2D) -> Optional[RetourDeTir]:
-        return (
-            RetourDeTir[self._cases_touchees[case[0], case[1]]]
-            if self._cases_touchees[case[0], case[1]] != 0
-            else None
-        )
+    def etat_de_case(self, case: Point2D) -> RetourDeTir:
+        return RetourDeTir(self._cases_touchees[case])
 
     def case_touchee(self, case: Point2D) -> bool:
         return self.etat_de_case(case) == RetourDeTir.Touchee
@@ -103,7 +108,7 @@ class Bataille:
         return sum(self._nb_cases_touchees.values()) == self._nb_cases_occupees
 
     def affiche(self, **kwargs):
-        return pyplot.matshow(self.fog_of_war(), cmap=CMAP_BATAILLE, **kwargs)
+        return pyplot.matshow(self.fog_of_war(), cmap=BATAILLE_CMAP, norm=BATAILLE_NORM, interpolation='nearest', **kwargs)
 
     def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
         """
@@ -137,11 +142,12 @@ class Bataille:
         """
         for type_, _, positions in self.bateaux_coules:
             for pos in positions:
-                if grille.case(pos) != type_:
+                if grille[pos] != type_:
                     return False
 
-        for pos in self._cases_touchees.nonzero():
-            if grille.case(pos) == TypeBateau.Vide:
+        for pos_index in np.flatnonzero(self._cases_touchees):
+            pos = np.unravel_index(pos_index, self._cases_touchees.shape)
+            if grille[pos] == TypeBateau.Vide and self.etat_de_case(pos) != RetourDeTir.Vide:
                 return False
 
         # TODO: étape 3: vérification des tailles des cases.
@@ -160,7 +166,7 @@ class Bataille:
         self.score += 1
         if (
             self._grille.case(case) != TypeBateau.Vide.value
-            and self.etat_de_case(case) is None
+            and self.etat_de_case(case) == RetourDeTir.Inconnu
         ):
             # on récupère une référence canonique au bâteau, peu importe sa case.
             type_, dir_, c_pos = self._grille.reference_bateau(case)
@@ -169,18 +175,23 @@ class Bataille:
             # on détermine si on a coulé ou touchée seulement le bâteau.
             retour = (
                 RetourDeTir.Coulee
-                if self._nb_cases_touchees == type_.value
+                if self._nb_cases_touchees[c_pos] == LONGUEUR_BATEAUX[type_]
                 else RetourDeTir.Touchee
             )
             # on note la valeur de retour.
-            self._cases_touchees[case[0], case[1]] = retour.value
+            self._cases_touchees[case] = retour.value
 
             if retour == RetourDeTir.Coulee:
+                placement = self.obtenir_bateau(case)
+                for c in placement[2]:
+                    self._cases_touchees[c] = RetourDeTir.Coulee.value
+
                 self.bateaux_coules.append(self.obtenir_bateau(case))
             # on redonne le retour.
             return retour
         else:
-            return self.etat_de_case(case) or RetourDeTir.Vide
+            self._cases_touchees[case] = RetourDeTir.Vide.value
+            return self.etat_de_case(case)
 
     def reset(self) -> None:
         self._cases_touchees = np.zeros(self.tailles)
