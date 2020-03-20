@@ -99,6 +99,7 @@ def main():
         retour = bataille.tirer(cible)
         print('Tir à {}, retour: {}'.format(cible, retour))
         strategie.analyser(bataille, cible, retour)
+        print(bataille._nb_cases_occupees, sum(bataille._nb_cases_touchees.values()))
 
     if args.animation_bataille:
         trames_bataille.extend([bataille.fog_of_war().copy()] * 10)
