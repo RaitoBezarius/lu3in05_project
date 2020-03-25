@@ -13,6 +13,7 @@ class TypeBateau(IntEnum):
     ContreTorpilleurs = 3
     SousMarin = 4
     Torpilleur = 5
+    ObjetPerdu = 6
 
 
 class Direction(IntEnum):
