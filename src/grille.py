@@ -1,7 +1,8 @@
 import numpy as np
-from typing import Tuple, Iterable
+from typing import Tuple, Iterable, Set, Dict
 import random
 from enum import IntEnum
+from collections import defaultdict
 from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 
@@ -34,22 +35,22 @@ DIRECTION_GENERATOR = {Direction.Horizontal: (1, 0), Direction.Vertical: (0, 1)}
 
 Point2D = Tuple[int, int]
 
-CMAP_GRILLE_ARRAY = np.array(
-                                [
-                                    [0, 0, 255],
-                                    [30, 40, 23],
-                                    [100, 0, 20],
-                                    [20, 200, 10],
-                                    [200, 100, 100],
-                                    [255, 255, 0],
-                                ]
-                            ) / 255
+CMAP_GRILLE_ARRAY = [
+            'white', # empty
+            'red', # porte avions
+            'green', # croiseurs
+            'blue', # contre torpilleurs
+            'yellow', # sous marin
+            'brown', # torpilleur
+        ]
 
 CMAP_GRILLE = ListedColormap(CMAP_GRILLE_ARRAY)
 
 
 def engendre_position_pour_un_bateau(
-    courant: Point2D, type_: TypeBateau, dir_: Direction
+    type_: TypeBateau,
+    courant: Point2D,
+    dir_: Direction
 ) -> Iterable[Point2D]:
     length = LONGUEUR_BATEAUX.get(type_)
     if length is None:
@@ -59,23 +60,23 @@ def engendre_position_pour_un_bateau(
     if delta is None:
         raise ValueError("`dir_` n'est pas une direction")
 
-    x, y = courant
+    y, x = courant
     delta_x, delta_y = delta
-    for k in range(length + 1):
-        yield (x + k * delta_x, y + k * delta_y)
+    for k in range(length):
+        yield (y + k*delta_y, x + k*delta_x)
 
 
 def tirer_point_uniformement(tailles: Tuple[int, int]) -> Point2D:
     n, m = tailles
     total = n * m
     k = random.randint(0, total - 1)
-    # interprétation phi : [[0, nb_cases_totales - 1]] → [[0, n - 1]] × [[0, m - 1]]
-    #                             k                →     (k   mod  n,   k intdiv n)
+    # interprétation phi : [[0, nb_cases_totales - 1]] → [[0, m - 1]] × [[0, n - 1]]
+    #                             k                →     (k   //  n   ,  k   mod   n)
     # où intdiv est la division entière.
     # justifié par unicité (et existence) de la division euclidienne.
     # il faut voir que k = ny + x.
 
-    return (k % n, k // n)
+    return (k // n, k % n)
 
 
 def tirer_direction_uniformement() -> Direction:
@@ -84,8 +85,10 @@ def tirer_direction_uniformement() -> Direction:
 
 
 class Grille:
-    def __init__(self, n=10, m=10):
-        self.inner = np.zeros((n, m), np.uint8)
+    def __init__(self, tailles: Tuple[int, int] = (10, 10)):
+        self.inner: np.array = np.zeros(tailles, np.uint8)
+        self.registre_des_bateaux: Dict[Point2D, Tuple[TypeBateau, Direction, Set[Point2D]]] = dict()
+        self.registre_des_positions: Dict[Point2D, Point2D] = dict()
 
     def __repr__(self):
         return repr(self.inner)
@@ -110,7 +113,7 @@ class Grille:
         return self.inner.shape
 
     def est_dans_la_grille(self, pos: Point2D) -> bool:
-        x, y = pos
+        y, x = pos
         n, m = self.tailles
 
         return 0 <= x < n and 0 <= y < m
@@ -123,12 +126,24 @@ class Grille:
         if not self.est_dans_la_grille(pos):
             raise ValueError("`pos` est hors de la grille!")
 
-        return self.inner[pos[0]][pos[1]]
+        return self.inner[pos]
+
+    def reference_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Point2D]:
+        """
+        Retourne les données canoniques d'un bâteau dans cette grille.
+        """
+        c_pos = self.registre_des_positions.get(case)
+        if c_pos is None:
+            raise ValueError("Aucun bâteau ne se trouve à cette case!")
+
+        type_, dir_, _ = self.registre_des_bateaux[c_pos]
+
+        return type_, dir_, c_pos
 
     def peut_placer(self, type_: TypeBateau, pos: Point2D, dir_: Direction) -> bool:
         return all(
-            self.est_dans_la_grille(pos) and self.case(pos) == TypeBateau.Vide
-            for pos in engendre_position_pour_un_bateau(pos, type_, dir_)
+            self.est_dans_la_grille(pos) and self[pos] == TypeBateau.Vide
+            for pos in engendre_position_pour_un_bateau(type_, pos, dir_)
         )
 
     def peut_placer_quelque_part(self, type_: TypeBateau) -> bool:
@@ -155,21 +170,29 @@ class Grille:
         return False
 
     def place(
-        self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = False
+        self, type_: TypeBateau, pos: Point2D, dir_: Direction, en_place: bool = True
     ) -> "Grille":
         inner = self.inner
+        reg_bateaux = self.registre_des_bateaux
+        reg_positions = self.registre_des_positions
         if not en_place:
             inner = self.inner.copy()
+            reg_bateaux = self.registre_des_bateaux.copy()
+            reg_positions = self.registre_des_positions.copy()
 
-        for pos in engendre_position_pour_un_bateau(pos, type_, dir_):
-            inner[pos[0]][pos[1]] = type_.value
+        reg_bateaux[pos] = (type_, dir_, set())
+
+        for pos_ in engendre_position_pour_un_bateau(type_, pos, dir_):
+            inner[pos_[0], pos_[1]] = type_.value
+            reg_bateaux[pos][2].add(pos_)
+            reg_positions[pos_] = pos
 
         if en_place:
             return self
         else:
-            return Grille.depuis_tableau(inner)
+            return Grille.depuis_tableau(inner, reg_bateaux, reg_positions)
 
-    def place_alea(self, type_: TypeBateau, en_place: bool = False) -> "Grille":
+    def place_alea(self, type_: TypeBateau, en_place: bool = True) -> "Grille":
         """
         Cette fonction fait l'hypothèse qu'il existe un emplacement admissible, sinon elle bouclera infiniement.
         """
@@ -182,19 +205,29 @@ class Grille:
         return self.place(type_, courant, dir_, en_place=en_place)
 
     def affiche(self, **kwargs) -> None:
-        # FIXME: légender les couleurs automatiquement.
-        # Utiliser une cmap custom?
-        pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
+        return pyplot.matshow(self.inner, cmap=CMAP_GRILLE, **kwargs)
+
+    def obtenir_bateau(self, case: Point2D) -> Tuple[TypeBateau, Direction, Set[Point2D]]:
+        if case not in self.registre_des_positions:
+            raise ValueError("Cette position n'est pas enregistré pour un bâteau")
+        c_pos = self.registre_des_positions.get(case)
+        return self.registre_des_bateaux[c_pos]
 
     def __eq__(self, other: "Grille") -> bool:
         assert isinstance(
             other, Grille
         ), "L'égalité de grilles ne peut être fait qu'entre instances de `Grille`"
-        return self.inner == other.inner
+        return (self.inner == other.inner).all()
+
+    def __getitem__(self, case: Point2D) -> TypeBateau:
+        return TypeBateau(self.inner[case])
+
+    def __hash__(self):
+        return hash(self.inner.tostring())
 
     @classmethod
     def generer_grille(
-        cls, *, n: int = 10, m: int = 10, facteur_vide: float = 0.3
+            cls, *, tailles: Tuple[int, int] = (10, 10), facteur_vide: float = 0.3
     ) -> "Grille":
         """
         Analyse probabiliste:
@@ -216,13 +249,12 @@ class Grille:
 
         FIXME: cette fonction génère trop de grilles vides.
         """
-        g = cls(n, m)
+        g = cls(tailles)
+        nbVides = facteur_vide * g.nb_cases_totales # nombre de cases vides.
+        nbBateau = 0
         maxNbBateau = random.randint(
-            0, g.nb_cases_totales // 2
-        )  # TODO: remplacer 2 par nonzero_min(LONGUEUR_BATEAUX.values())
-        nbBateau = random.randint(
-            0, facteur_vide * g.nb_cases_totales
-        )  # nombre de cases vides.
+            0, (g.nb_cases_totales - nbVides) // 2
+        )
         for bateau in TypeBateau:
             if nbBateau >= maxNbBateau:
                 break
@@ -239,14 +271,20 @@ class Grille:
                 and nbBateau < maxNbBateau
                 and nbBateauDeCeType < maxNbBateauDeCeType
             ):
-                g.place_alea(bateau, en_place=True)
+                g.place_alea(bateau)
                 nbBateau += 1
                 nbBateauDeCeType += 1
         return g
 
     @classmethod
-    def depuis_tableau(cls, inner: np.array) -> "Grille":
-        n, m = inner.shape
-        g = cls(n, m)
+    def depuis_tableau(
+        cls,
+        inner: np.array,
+        reg_bateaux: Dict[Point2D, Tuple[TypeBateau, Direction, Set[Point2D]]],
+        reg_positions: Dict[Point2D, Point2D],
+    ) -> "Grille":
+        g = cls(inner.shape)
         g.inner = inner
+        g.registre_des_bateaux = reg_bateaux
+        g.registre_des_positions = reg_positions
         return g
