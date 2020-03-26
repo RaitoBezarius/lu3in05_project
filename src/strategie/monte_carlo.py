@@ -120,6 +120,7 @@ class StrategieMonteCarlo(StrategieProbabilisteSimple):
     def __init__(self):
         super().__init__()
         self.prev_mcmc = None
+
     def evaluer(self, bataille: Bataille, grille_candidate: Grille) -> np.array:
         """
         Compte tenu des contraintes du champ de bataille actuel, nous faisons l'hypothèse que le champ de bataille est la grille passée en paramètre.
@@ -200,3 +201,7 @@ class StrategieMonteCarlo(StrategieProbabilisteSimple):
     def analyser(self, bataille: Bataille, cible: Point2D, retour: RetourDeTir) -> Point2D:
         super().analyser(bataille, cible, retour)
         # FIXME: si on a eu un coulé, on supprime les bâteaux qu'on a dans prev_mcmc
+
+    def reset(self):
+        super().reset()
+        self.prev_mcmc = None

@@ -16,3 +16,7 @@ class StrategieAleatoire(StrategieBase):
 
     def analyser(self, bataille: Bataille, cible: Point2D, retour: RetourDeTir):
         self.positions_deja_jouees.add(cible)
+
+    def reset(self):
+        super().reset()
+        self.positions_deja_jouees = set()

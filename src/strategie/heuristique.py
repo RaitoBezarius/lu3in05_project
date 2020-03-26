@@ -46,6 +46,9 @@ class StrategieHeuristique(StrategieAvecMemoire):
         positions_a_tirer = list(self.positions_bataille - self.positions_deja_tirees)
 
         # Selection d'une position au hasard
+        if len(positions_a_tirer) == 0:
+            print("Aucune position disponible")
+            exit(1)
         index = np.random.randint(len(positions_a_tirer))
         return positions_a_tirer[index]
 
@@ -107,7 +110,6 @@ class StrategieHeuristique(StrategieAvecMemoire):
             #       alors choisir une case touchee non coulee restante au hasard  
             #       sinon changer de direction
             if retour == RetourDeTir.Coulee:
-                print("2")
                 if bataille.case_coulee(self.pt_de_depart):
                     if self.cases_touchees_non_coulees == set():
                         self.mode = ALEATOIRE
@@ -118,15 +120,19 @@ class StrategieHeuristique(StrategieAvecMemoire):
             # Si la case tiree est differente du type de bateau du point de depart
             # Alors changer de direction
             elif retour == RetourDeTir.Vide or bataille.case(self.tir) != bataille.case(self.pt_de_depart):
-                print('1')
                 self.dir, self.tir = self.recuperer_dir_pos(bataille, self.direc_suiv((self.dir)))
             # Si la case touchee n'est ni coulee ni d'un type different du type du bateau
             # Alors avancer dans la direction courante
             #       Si on sort de la grille
             #       Alors changer de position
             else:
-                print('3')
                 self.dir, self.tir = self.recuperer_dir_pos(bataille, self.dir)
 
-        
-
+    def reset(self):
+        super().reset()
+        self.mode = ALEATOIRE
+        self.dir = Direction.STOP
+        self.pt_de_depart = (-1, -1)
+        self.tir = (-1, - 1)
+        self.tailles = (-1, -1)
+        self.positions_bataille = set() 

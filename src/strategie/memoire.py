@@ -17,3 +17,8 @@ class StrategieAvecMemoire(StrategieBase):
         if retour == RetourDeTir.Coulee:
             _, _, pos = bataille.obtenir_bateau(cible)
             self.cases_touchees_non_coulees -= pos
+    
+    def reset(self):
+        super().reset()
+        self.cases_touchees_non_coulees = set()
+        self.positions_deja_tirees = set()

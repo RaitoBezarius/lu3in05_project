@@ -7,4 +7,4 @@ from .heuristique import StrategieHeuristique
 monte_carlo = StrategieMonteCarlo()
 aleatoire = StrategieAleatoire()
 probabiliste = StrategieProbabilisteSimple()
-heuristiqueStrat = StrategieHeuristique()
+heuristique = StrategieHeuristique()

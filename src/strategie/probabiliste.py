@@ -123,3 +123,6 @@ class StrategieProbabilisteSimple(StrategieAvecMemoire):
         
 
         return self.agir_selon_probabilites(proba)
+    
+    def reset(self):
+        super().reset()

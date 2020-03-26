@@ -11,3 +11,6 @@ class StrategieBase:
 
     def analyser(self, bataille: Bataille, cible: Point2D, retour: RetourDeTir):
         raise NotImplementedError
+    
+    def reset(self):
+        pass
