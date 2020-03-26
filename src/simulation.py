@@ -82,8 +82,8 @@ def main():
         default=1,
     )
     parser.add_argument(
-        "-n",
-        "--nom-courbe",
+        "-s",
+        "--sortie",
         nargs=1,
         help="Nom de la courbe de distribution, si demandee",
         default="",
@@ -112,6 +112,9 @@ def main():
     if is_building_curve:
         X = np.arange(tailles[0] * tailles[1] + 1)
         pX = np.zeros(tailles[0] * tailles[1] + 1)
+
+    if args.sortie != "" and not is_building_curve:
+        raise Exception("Precise the name only if you want a distribution curve")
 
     trames_bataille = []
     trames_grille = []
